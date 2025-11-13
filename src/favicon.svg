@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Российский флаг в форме щита -->
+  <defs>
+    <linearGradient id="tricolor" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="33.33%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="33.33%" style="stop-color:#0039A6;stop-opacity:1" />
+      <stop offset="66.66%" style="stop-color:#0039A6;stop-opacity:1" />
+      <stop offset="66.66%" style="stop-color:#D52B1E;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#D52B1E;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Форма щита -->
+  <path d="M 50 10 L 80 20 L 80 50 Q 80 80 50 90 Q 20 80 20 50 L 20 20 Z" 
+        fill="url(#tricolor)" 
+        stroke="#1a1a1a" 
+        stroke-width="2"/>
+  
+  <!-- Буква И -->
+  <text x="50" y="60" font-family="Arial, sans-serif" font-size="32" font-weight="bold" 
+        fill="#1a1a1a" text-anchor="middle" dominant-baseline="middle">ИЭО</text>
+</svg>
