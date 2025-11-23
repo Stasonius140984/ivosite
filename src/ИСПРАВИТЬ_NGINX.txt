@@ -1,0 +1,132 @@
+═══════════════════════════════════════════════════════════════
+  🔧 ИСПРАВЛЕНИЕ КОНФИГУРАЦИИ NGINX
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│ ПРОБЛЕМА                                                    │
+├─────────────────────────────────────────────────────────────┤
+│ Вы создали файл: /etc/nginx/sites-available/ieo.ru         │
+│ Но нужно:        /etc/nginx/sites-available/ivo            │
+│                                                             │
+│ Также в server_name не хватает Punycode версии домена      │
+└─────────────────────────────────────────────────────────────┘
+
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ РЕШЕНИЕ: Выполните эти команды на сервере                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# 1. Удалите неправильный файл
+rm /etc/nginx/sites-available/ieo.ru
+rm /etc/nginx/sites-enabled/ieo.ru 2>/dev/null
+
+# 2. Создайте правильный конфигурационный файл
+cat > /etc/nginx/sites-available/ivo << 'EOF'
+server {
+    listen 80;
+    server_name иэо.рф www.иэо.рф xn--h1aana.xn--p1ai www.xn--h1aana.xn--p1ai 217.114.15.80;
+    
+    root /var/www/ivo/build;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+# 3. Создайте симлинк
+ln -s /etc/nginx/sites-available/ivo /etc/nginx/sites-enabled/
+
+# 4. Проверьте конфигурацию
+nginx -t
+
+# 5. Перезапустите Nginx
+systemctl restart nginx
+
+# 6. Проверьте статус
+systemctl status nginx
+
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ИЛИ БЫСТРО: Одна команда для всего                        ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+rm -f /etc/nginx/sites-available/ieo.ru /etc/nginx/sites-enabled/ieo.ru && cat > /etc/nginx/sites-available/ivo << 'EOF'
+server {
+    listen 80;
+    server_name иэо.рф www.иэо.рф xn--h1aana.xn--p1ai www.xn--h1aana.xn--p1ai 217.114.15.80;
+    
+    root /var/www/ivo/build;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+ln -sf /etc/nginx/sites-available/ivo /etc/nginx/sites-enabled/ && nginx -t && systemctl restart nginx
+
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ОБЪЯСНЕНИЕ ИЗМЕНЕНИЙ                                       ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+1. Имя файла:
+   ❌ ieo.ru  →  ✅ ivo
+   (для консистентности с путём /var/www/ivo/)
+
+2. Server name добавлено:
+   ✅ xn--h1aana.xn--p1ai        (Punycode для иэо.рф)
+   ✅ www.xn--h1aana.xn--p1ai    (с www)
+   ✅ 217.114.15.80              (прямой IP)
+
+   Теперь сайт будет работать через:
+   - http://иэо.рф
+   - http://www.иэо.рф
+   - http://xn--h1aana.xn--p1ai
+   - http://217.114.15.80
+
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ПОСЛЕ ИСПРАВЛЕНИЯ                                          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+1. Откройте браузер: http://иэо.рф
+2. Нажмите: Ctrl+Shift+R (очистить кеш)
+3. Сайт должен загрузиться со всеми стилями!
+
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ПРОВЕРКА                                                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+# Проверить, что файл существует
+ls -la /etc/nginx/sites-available/ivo
+
+# Проверить, что симлинк создан
+ls -la /etc/nginx/sites-enabled/ivo
+
+# Посмотреть содержимое конфигурации
+cat /etc/nginx/sites-available/ivo
+
+# Проверить статус Nginx
+systemctl status nginx
+
+# Посмотреть логи при необходимости
+tail -f /var/log/nginx/error.log
+
+
+═══════════════════════════════════════════════════════════════
+Дата: 11.11.2025 | Статус: Готово к применению ✅
+═══════════════════════════════════════════════════════════════

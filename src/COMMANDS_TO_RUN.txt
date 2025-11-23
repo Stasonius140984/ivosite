@@ -1,0 +1,140 @@
+==============================================
+КОМАНДЫ ДЛЯ ВЫПОЛНЕНИЯ НА СЕРВЕРЕ (СЕЙЧАС)
+==============================================
+
+Вы уже подключены к серверу через SSH.
+Скопируйте и выполните команды по порядку:
+
+----------------------------------------------
+ШАГ 1: Установка прав доступа
+----------------------------------------------
+
+chown -R www-data:www-data /var/www/ivo/build/
+chmod -R 755 /var/www/ivo/build/
+find /var/www/ivo/build/ -type f -exec chmod 644 {} \;
+
+----------------------------------------------
+ШАГ 2: Проверка веб-сервера
+----------------------------------------------
+
+# Проверьте nginx:
+systemctl status nginx
+
+# ИЛИ Apache:
+systemctl status apache2
+
+----------------------------------------------
+ШАГ 3А: Если у вас NGINX - создайте конфиг
+----------------------------------------------
+
+cat > /etc/nginx/sites-available/ivo << 'EOF'
+server {
+    listen 80;
+    listen [::]:80;
+    
+    server_name xn--d1a4b.xn--p1ai иэо.рф 217.114.15.80;
+    
+    root /var/www/ivo/build;
+    index index.html;
+    
+    charset utf-8;
+    
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss;
+    
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+EOF
+
+# Активируйте:
+ln -sf /etc/nginx/sites-available/ivo /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+
+----------------------------------------------
+ШАГ 3Б: Если у вас APACHE - создайте конфиг
+----------------------------------------------
+
+cat > /etc/apache2/sites-available/ivo.conf << 'EOF'
+<VirtualHost *:80>
+    ServerName xn--d1a4b.xn--p1ai
+    ServerAlias иэо.рф 217.114.15.80
+    
+    DocumentRoot /var/www/ivo/build
+    
+    <Directory /var/www/ivo/build>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        RewriteEngine On
+        RewriteBase /
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
+    
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+    </IfModule>
+    
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+</VirtualHost>
+EOF
+
+# Активируйте:
+a2enmod rewrite headers expires deflate
+a2ensite ivo.conf
+apache2ctl configtest
+systemctl restart apache2
+
+----------------------------------------------
+ШАГ 4: Проверка
+----------------------------------------------
+
+# Проверьте, что сервер работает:
+curl -I http://217.114.15.80
+
+# Должен вернуть HTTP/1.1 200 OK
+
+# Откройте в браузере:
+# http://217.114.15.80
+
+----------------------------------------------
+ШАГ 5 (опционально): Установка SSL
+----------------------------------------------
+
+# Для nginx:
+apt update
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d xn--d1a4b.xn--p1ai
+
+# ИЛИ для Apache:
+apt update
+apt install -y certbot python3-certbot-apache
+certbot --apache -d xn--d1a4b.xn--p1ai
+
+==============================================
+ГОТОВО!
+==============================================
+
+После выполнения команд откройте:
+http://217.114.15.80
+
+Сайт должен отображаться с цветами триколора! 🇷🇺
